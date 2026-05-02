@@ -1,3 +1,7 @@
+use headr::get_args;
+
 fn main() {
-    println!("Hello, world!");
+    if let Err(e) = headr::run(get_args().unwrap()) {
+        eprintln!("{}", e);
+    }
 }
