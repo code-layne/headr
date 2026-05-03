@@ -98,3 +98,11 @@ fn open(filename: &str) -> MyResult<Box<dyn BufRead>> {
         _ => Ok(Box::new(BufReader::new(File::open(filename)?))),
     }
 }
+
+#[test]
+fn test_parse_positive_integer() {
+    assert_eq!(parse_positive_integer("3").unwrap(), 3);
+    assert!(parse_positive_integer("0").is_err());
+    assert!(parse_positive_integer("abc").is_err());
+    assert!(parse_positive_integer("-1").is_err());
+}
