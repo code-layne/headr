@@ -8,7 +8,7 @@ use std::io::{BufRead, BufReader};
 pub struct Config {
     files: Vec<String>,
     lines: usize,
-    bytes: usize,
+    bytes: Option<usize>,
 }
 
 type MyResult<T> = Result<T, Box<dyn Error>>;
@@ -18,12 +18,12 @@ pub fn run(config: Config) -> MyResult<()> {
         match open(&filename) {
             Err(err) => eprintln!("Failed to open {}: {}", filename, err),
             Ok(reader) => {
-                if config.bytes > 0 {
+                if config.bytes.unwrap_or(0) == 0 {
                     // read only bytes # chars from the buffer
                 }
                 for (line_num, line) in reader.lines().enumerate() {
                     if config.lines > line_num {
-                        return Ok(())
+                        return Ok(());
                     }
                     let line = line?;
                     println!("{}", line);
@@ -71,20 +71,16 @@ pub fn get_args() -> MyResult<Config> {
             .get_one::<String>("number-lines")
             .map(|s| parse_positive_integer(s))
             .transpose()
-            .map_err(|e| -> Box<dyn std::error::Error> {
-                format!("illegal line count -- {e}").into()
-            })?
+            .map_err(|e| -> Box<dyn Error> { format!("illegal line count -- {e}").into() })?
             .unwrap_or(10),
         bytes: matches
             .get_one::<String>("number-chars")
             .map(|s| parse_positive_integer(s))
             .transpose()
-            .map_err(|e| -> Box<dyn std::error::Error> {
-                format!("illegal char count -- {e}").into()
-            })?
-            .unwrap_or(0),
+            .map_err(|e| -> Box<dyn Error> { format!("illegal char count -- {e}").into() })?,
     })
 }
+
 fn parse_positive_integer(val: &str) -> MyResult<usize> {
     match val.parse::<usize>() {
         Ok(n) if n > 0 => Ok(n),
