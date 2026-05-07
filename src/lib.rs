@@ -2,7 +2,7 @@ use clap::{Arg, Command};
 use std::error::Error;
 use std::fs::File;
 use std::io;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Read};
 
 #[derive(Debug)]
 pub struct Config {
@@ -14,19 +14,28 @@ pub struct Config {
 type MyResult<T> = Result<T, Box<dyn Error>>;
 
 pub fn run(config: Config) -> MyResult<()> {
+    let print_filename = config.files.len() > 1;
     for filename in config.files {
         match open(&filename) {
             Err(err) => eprintln!("Failed to open {}: {}", filename, err),
             Ok(reader) => {
-                if config.bytes.unwrap_or(0) == 0 {
-                    // read only bytes # chars from the buffer
+                if print_filename {
+                    println!("==> {} <==", filename);
                 }
-                for (line_num, line) in reader.lines().enumerate() {
-                    if config.lines > line_num {
-                        return Ok(());
+                let number_chars  = config.bytes.unwrap_or(0);
+                if number_chars != 0 {
+                    let mut limited = reader.take(number_chars as u64);
+                    let mut contents = String::new();
+
+                    limited.read_to_string(&mut contents)?;
+                    println!("{}", contents);
+                } else {
+                    for (line_num, line) in reader.lines().enumerate() {
+                        if config.lines > line_num {
+                            println!("{}", line?);
+                        }
                     }
-                    let line = line?;
-                    println!("{}", line);
+                    println!()
                 }
             }
         }
